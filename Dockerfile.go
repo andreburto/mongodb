@@ -1,4 +1,4 @@
-FROM golang:1.22
+FROM golang:1.22 AS build
 
 WORKDIR /app
 
@@ -8,4 +8,8 @@ RUN go get github.com/andrewburto/mongodb-go && \
     go build -o mongo . && \
     chmod +x mongo
 
-CMD ["./mongo"]
+FROM busybox:latest
+
+COPY --from=build /app/mongo /bin/mongo
+
+CMD ["mongo"]
