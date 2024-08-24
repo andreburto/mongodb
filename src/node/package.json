@@ -1,0 +1,12 @@
+{
+    "name": "mongodb-loader",
+    "version": "0.0.1",
+    "description": "MongoDB loader",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "lodash": "latest",
+        "mongodb": "latest"
+    }
+}

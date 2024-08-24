@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.go
+    ports:
+      - 8080:8080
+    depends_on:
+      - mongodb
+      - setup
+    env_file:
+      - path: .env
+        required: true
+  setup:
+    build:
+      context: .
+      dockerfile: Dockerfile.nodejs
+    depends_on:
+      - mongodb
+    env_file:
+      - path: .env
+        required: true
+  mongodb:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - ./data:/data/db
+    env_file:
+      - path: .env
+        required: true
