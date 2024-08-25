@@ -4,11 +4,13 @@ WORKDIR /app
 
 COPY ./src/go /app
 
-RUN go get github.com/andrewburto/mongodb-go && \
+RUN go get . && \
     go build -o mongo . && \
     chmod +x mongo
 
 FROM busybox:latest
+
+EXPOSE 8080
 
 COPY --from=build /app/mongo /bin/mongo
 

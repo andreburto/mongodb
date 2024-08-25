@@ -4,6 +4,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,8 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Replace the placeholder with your Atlas connection string
-func main() {
+func UpdateCounter() int32 {
 	uri := os.Getenv("MONGO_URI")
 
 	// Use the SetServerAPIOptions() method to set the Stable API version to 1
@@ -26,38 +27,52 @@ func main() {
 		panic(err)
 	}
 
-	// Send a ping to confirm a successful connection
-	var resulta bson.M
-	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&resulta); err != nil {
-		panic(err)
-	}
-	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
-
-	// Extract rows from the Counter collection and count the documents
 	collection := client.Database("Counter").Collection("count")
 
 	filter := bson.D{{}} // Empty filter to retrieve all documents
-	count, err := collection.CountDocuments(context.TODO(), filter, nil)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Total documents in the Counter collection: %d\n", count)
-
 	row := collection.FindOne(context.TODO(), filter)
 	if err := row.Err(); err != nil {
 		panic(err)
 	}
-	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
 
-	var resultb bson.M
-	if err := row.Decode(&resultb); err != nil {
+	var result bson.M
+	if err := row.Decode(&result); err != nil {
 		panic(err)
 	}
 
-	fmt.Println(resultb)
+	var oldValue int32 = result["total"].(int32)
+	var newValue int32 = oldValue + 1
 
+	updateFilter := bson.D{{"id", result["id"]}}
+	update := bson.D{{"$set", bson.D{{"total", newValue}}}}
+
+	_, err = collection.UpdateOne(context.TODO(), updateFilter, update)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = client.Disconnect(context.TODO()); err != nil {
+		panic(err)
+	}
+
+	//fmt.Printf("Old Total: %d\nNew Total: %d\n", oldValue, newValue)
+	return newValue
+}
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	var content string = "<html><body><h1>Counter</h1><p>Visits: %d</p></body></html>"
+	var total int32 = UpdateCounter()
+	log.Printf("Total: %d, Path: %s\n", total, r.URL.Path)
+	fmt.Fprintf(w, content, total)
+}
+
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+}
+
+// Replace the placeholder with your Atlas connection string
+func main() {
+	http.HandleFunc("/", handleRoot)
+	http.HandleFunc("/favicon.ico", faviconHandler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
