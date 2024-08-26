@@ -16,29 +16,23 @@ const client = new MongoClient(mongoUrl,  {
         deprecationErrors: true,
         setTimeout: 10000,
     }
-}
-);
+});
 
 async function run() {
   try {
     const database = client.db(dbName);
     const countCollection = database.collection(collectionName);
 
+    // Clear out the collection.
     const clearResult = await countCollection.deleteMany({});
     
-    // Create a document to insert
-    const doc = {
-      total: 0,
-    }
-    
-    const result = await countCollection.insertOne(doc);
-
     // Print the ID of the inserted document
     console.log(`A document was inserted with the _id: ${result.insertedId}`);
   } finally {
-     // Close the MongoDB client connection
+    // Close the MongoDB client connection
     await client.close();
   }
 }
+
 // Run the function and handle any errors
 run().catch(console.dir);
